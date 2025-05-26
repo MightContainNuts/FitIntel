@@ -40,6 +40,8 @@ vitalscope/
 ├── dashboard.py        # HealthDashboard widget
 ├── analysis/           # Placeholder for AI models (future)
 ├── data/               # Data import and transformation (planned)
+├── db/                 # Database models handlers
+├── services/           # additional tools for handling data
 └── README.md
 ```
 
