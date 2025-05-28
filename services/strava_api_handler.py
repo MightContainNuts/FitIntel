@@ -1,7 +1,8 @@
 # get data back from strava
 from datetime import datetime, timedelta
 
-from schemas import settings
+from services.schemas import settings, SchemaStravaMetaData
+from services.db_handler import DataBaseHandler
 import requests
 
 from typing import Optional, List
@@ -14,6 +15,7 @@ class StravaHandler:
         self.token:Optional[str|None] = None
         self.activities:Optional[List]=None
         self.all_activities:List=[]
+        self.activity_metadata:Optional[dict]={}
 
 
     def refresh_access_token(self)->None:
@@ -42,7 +44,7 @@ class StravaHandler:
 
 
 
-    def get_strava_activities(self, page:int = 1, act_per_page:int=30)->None:
+    def get_strava_activity_metadata(self, page:int = 1, act_per_page:int=30)->None:
         """ get activities from Strava API"""
         print("Getting activities from Strava API...")
         URL = "https://www.strava.com/api/v3/activities"
@@ -53,12 +55,42 @@ class StravaHandler:
         }
         response = requests.get(URL, params=params, headers=headers)
         self.activities = response.json()
+        for activity in self.activities:
+
+            metadata = SchemaStravaMetaData(
+                activity_id=activity["id"],
+                activity_name=activity["name"],
+                activity_type=activity["type"],
+                activity_date=datetime.fromisoformat(
+                activity["start_date"].replace("Z",
+                                               "+00:00")),
+            )
+            print(metadata)
+            if metadata:
+                self.write_metadata_to_db(metadata=metadata)
+            else:
+                print("Something went wrong getting metadata")
+
+
         print(f"Successfully got {len(self.activities)} activities from Strava API")
 
 
+    @staticmethod
+    def write_metadata_to_db(metadata:SchemaStravaMetaData)->None:
+        """helper function"""
+        success = f"Activity: {metadata.activity_id}: {metadata.activity_name} added to db"
+        failure = f"Activity: {metadata.activity_id}: {metadata.activity_name} skipped"
+        try:
+            with DataBaseHandler() as db:
+                result = db.write_metadata_to_db(metadata)
+                print(success) if result  else print(failure)
+
+        except Exception as e:
+            print(failure, e)
 
 
-    def get_all_data(self):
+
+    def get_all_metadata(self):
         """ get all data from Strava API - only needs to be done once"""
         print("Getting ALL data from Strava API...")
         page:int = 1
@@ -66,7 +98,7 @@ class StravaHandler:
 
         while True:
             print(f"Getting ALL data from Strava API page {page} - {act_per_page} per page...")
-            self.get_strava_activities(page, act_per_page)
+            self.get_strava_activity_metadata(page, act_per_page)
             self.all_activities += self.activities
             print(f"All Activities now: {len(self.all_activities)} activities!")
 
@@ -77,8 +109,10 @@ class StravaHandler:
             page += 1
 
 
+
 if __name__ == '__main__':
     s = StravaHandler()
     s.refresh_access_token()
-    s.get_all_data()
+    s.get_all_metadata()
+
 

@@ -2,6 +2,7 @@
 
 from pydantic_settings import BaseSettings
 from pathlib import Path
+from datetime import datetime
 
 
 class Settings(BaseSettings):
@@ -9,12 +10,13 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     OPENAI_API_KEY: str
     GEMINI_API_KEY: str
-    STRAVA_CLIENT_SECRET: str
-    STRAVA_CLIENT_ID: str
-    STRAVA_REFRESH_TOKEN: str
+
 
     # Strava constants:
     STRAVA_REDIRECT_URI: str = "127.0.0.1"
+    STRAVA_CLIENT_SECRET: str
+    STRAVA_CLIENT_ID: str
+    STRAVA_REFRESH_TOKEN: str
 
 
 
@@ -26,3 +28,9 @@ class Settings(BaseSettings):
 
 settings = Settings() # type: ignore
 
+class SchemaStravaMetaData(BaseSettings):
+    """ Strava activity metadata"""
+    activity_id: int
+    activity_name: str
+    activity_type: str
+    activity_date: datetime
